@@ -1,0 +1,552 @@
+.page {
+  --ink: #292722;
+  --muted: #68635b;
+  --paper: #fffefa;
+  --canvas: #fafaf8;
+  --line: #e6e2da;
+  --selected: #f2efe8;
+  --blue: #64839b;
+  --ease: cubic-bezier(.22, .61, .36, 1);
+  color: var(--ink);
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: clamp(24px, 4vw, 45px);
+}
+
+.header h1,
+.panelHeading h2 {
+  font-family: "Noto Serif SC", "Songti SC", SimSun, serif;
+  font-weight: 500;
+}
+
+.header h1 {
+  font-size: clamp(28px, 3.5vw, 45px);
+  line-height: 1.15;
+}
+
+.header p,
+.panelHeading p {
+  margin-top: 6px;
+  color: var(--muted);
+  font-size: 0.875rem;
+  overflow-wrap: anywhere;
+}
+
+.workspace {
+  display: grid;
+  gap: 24px;
+  align-items: start;
+}
+
+.listPanel,
+.editorPanel {
+  min-width: 0;
+}
+
+.editorPanel {
+  scroll-margin-top: 80px;
+  padding: 22px;
+  border: 1px solid var(--line);
+  border-radius: 13px;
+  background: var(--paper);
+}
+
+.editorPanel:focus {
+  outline: none;
+}
+
+.panelHeading {
+  margin-bottom: 12px;
+}
+
+.panelHeading h2 {
+  font-size: 1.2rem;
+  line-height: 1.35;
+}
+
+.albumList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 7px;
+}
+
+.listItem {
+  position: relative;
+  min-width: 0;
+}
+
+.listItem[data-insertion] {
+  z-index: 1;
+}
+
+.listItem[data-insertion]::after {
+  content: "";
+  position: absolute;
+  inset-inline: 5px;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--blue);
+  pointer-events: none;
+}
+
+.listItem[data-insertion="before"]::after {
+  top: -4px;
+}
+
+.listItem[data-insertion="after"]::after {
+  bottom: -4px;
+}
+
+.albumRow,
+.liftedRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--paper);
+  transition: background-color 160ms var(--ease), border-color 160ms var(--ease);
+}
+
+.albumRow[data-selected="true"] {
+  border-color: #dcd5c8;
+  background: var(--selected);
+}
+
+.albumRow[data-drag-source="true"] {
+  opacity: 0;
+}
+
+.liftedRow {
+  border-color: #dcd5c8;
+  box-shadow: 0 9px 24px #30291d22, 0 2px 6px #30291d10;
+  cursor: grabbing;
+  animation: lift 155ms var(--ease) both;
+}
+
+@keyframes lift {
+  from { transform: scale(.993); box-shadow: 0 2px 6px #30291d12; }
+  to { transform: scale(1.007); box-shadow: 0 9px 24px #30291d22, 0 2px 6px #30291d10; }
+}
+
+.albumSelect {
+  align-self: stretch;
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr);
+  grid-template-rows: auto auto;
+  column-gap: 10px;
+  align-items: end;
+  min-width: 0;
+  min-height: 66px;
+  margin: 0;
+  padding: 9px 4px 9px 10px;
+  border-radius: 9px;
+  text-align: start;
+  color: var(--ink);
+  cursor: pointer;
+  -webkit-touch-callout: none;
+  user-select: none;
+}
+
+.albumSelect[data-sortable="true"] {
+  cursor: grab;
+}
+
+.albumSelect[data-sortable="true"]:active {
+  cursor: grabbing;
+}
+
+.thumbnail,
+.editorCover {
+  display: block;
+  aspect-ratio: 1;
+  padding: 3px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--paper);
+  overflow: hidden;
+}
+
+.thumbnail {
+  grid-row: 1 / -1;
+  align-self: center;
+}
+
+.coverImage,
+.coverPlaceholder {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: 3px;
+  object-fit: cover;
+  background: #ece9e2;
+}
+
+.albumTitle {
+  font-size: 0.9375rem;
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.albumStatus {
+  align-self: start;
+  color: var(--muted);
+  font-size: 0.75rem;
+  white-space: nowrap;
+}
+
+.albumStatus[data-hidden="true"] {
+  font-style: normal;
+  color: #765a49;
+}
+
+.manageLink,
+.textButton,
+.deleteButton,
+.moveMenu summary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: fit-content;
+  min-height: 40px;
+  padding: 5px 7px;
+  border-radius: 6px;
+  color: var(--muted);
+  font-size: 0.8125rem;
+  line-height: 1.3;
+  text-underline-offset: 4px;
+  transition: color 150ms var(--ease), background-color 150ms var(--ease), transform 150ms var(--ease);
+}
+
+.manageLink {
+  margin-right: 5px;
+  white-space: nowrap;
+  color: var(--ink);
+  text-decoration: underline;
+  text-decoration-color: #a6a095;
+}
+
+.primaryButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-height: 44px;
+  padding: 8px 16px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: #2d2a25;
+  color: var(--paper);
+  font-size: 0.875rem;
+  line-height: 1.4;
+  white-space: nowrap;
+  transition: transform 160ms var(--ease), background-color 160ms var(--ease), box-shadow 160ms var(--ease);
+}
+
+.primaryButton:active:not(:disabled),
+.manageLink:active,
+.textButton:active:not(:disabled),
+.deleteButton:active:not(:disabled),
+.moveMenu summary:active {
+  transform: translateY(1px) scale(.982);
+}
+
+.page :is(button, a, summary, input):focus-visible {
+  outline: 2px solid var(--blue);
+  outline-offset: 3px;
+}
+
+.page :is(button, input):disabled {
+  cursor: not-allowed;
+}
+
+.primaryButton:disabled,
+.textButton:disabled,
+.deleteButton:disabled {
+  opacity: .5;
+}
+
+.editor .panelHeading {
+  padding-bottom: 16px;
+  margin-bottom: 18px;
+  border-bottom: 1px solid var(--line);
+}
+
+.editorFields {
+  display: grid;
+  gap: 14px;
+  min-width: 0;
+}
+
+.field {
+  display: grid;
+  gap: 7px;
+  color: var(--muted);
+  font-size: 0.8125rem;
+}
+
+.field input {
+  width: 100%;
+  min-width: 0;
+  min-height: 42px;
+  padding: 8px 11px;
+  border: 1px solid #d7d1c6;
+  border-radius: 7px;
+  background: var(--canvas);
+  color: var(--ink);
+  font-size: 1rem;
+}
+
+.coverField {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.editorCover {
+  width: 88px;
+  flex: none;
+}
+
+.coverField .textButton {
+  text-decoration: underline;
+}
+
+.toggleGroup {
+  display: grid;
+  padding: 3px 0;
+}
+
+.switchLabel {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 44px;
+  gap: 12px;
+  border-radius: 7px;
+  font-size: 0.875rem;
+  cursor: pointer;
+}
+
+.switchLabel input {
+  position: absolute;
+  inset-inline-end: 0;
+  width: 38px;
+  height: 24px;
+  opacity: 0;
+}
+
+.switchTrack {
+  position: relative;
+  width: 36px;
+  height: 21px;
+  border-radius: 20px;
+  border: 1px solid #a6a095;
+  background: #d6d2c9;
+  pointer-events: none;
+  transition: background-color 170ms var(--ease), border-color 170ms var(--ease);
+}
+
+.switchTrack::after {
+  content: "";
+  position: absolute;
+  left: 2px;
+  top: 2px;
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  background: var(--paper);
+  box-shadow: 0 1px 2px #211a162a;
+  transition: transform 185ms var(--ease);
+}
+
+.switchLabel input:checked + .switchTrack {
+  background: #393630;
+  border-color: #393630;
+}
+
+.switchLabel input:checked + .switchTrack::after {
+  transform: translateX(15px);
+}
+
+.switchLabel input:focus-visible + .switchTrack {
+  outline: 2px solid var(--blue);
+  outline-offset: 3px;
+}
+
+.switchLabel:active .switchTrack::after {
+  box-shadow: 0 1px 3px #211a1640;
+}
+
+.secondaryActions {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  border-top: 1px solid var(--line);
+  padding-top: 6px;
+}
+
+.moveMenu summary {
+  cursor: pointer;
+  list-style: none;
+}
+
+.moveMenu summary::-webkit-details-marker {
+  display: none;
+}
+
+.moveMenu[open] summary {
+  color: var(--ink);
+  text-decoration: underline;
+}
+
+.moveMenu > div {
+  display: flex;
+  gap: 4px;
+}
+
+.deleteButton {
+  margin-left: auto;
+  color: #8c4f45;
+}
+
+.empty,
+.error {
+  padding-block: 12px;
+  color: var(--muted);
+  font-size: 0.875rem;
+}
+
+.error,
+.feedback[data-error="true"] {
+  color: #8c4f45;
+}
+
+.feedback {
+  position: fixed;
+  z-index: 30;
+  inset-inline: 20px;
+  bottom: max(20px, env(safe-area-inset-bottom));
+  width: fit-content;
+  max-width: calc(100% - 40px);
+  margin-inline: auto;
+  padding: 9px 16px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--paper);
+  box-shadow: 0 4px 18px #30291d17;
+  color: var(--ink);
+  font-size: 0.875rem;
+  pointer-events: none;
+  opacity: 1;
+  transition: opacity 180ms var(--ease), transform 180ms var(--ease);
+}
+
+.feedback:empty {
+  opacity: 0;
+  transform: translateY(5px);
+}
+
+@media (hover: hover) {
+  .albumRow:hover:not([data-selected="true"]) {
+    background: #f8f5ef;
+  }
+
+  .primaryButton:hover:not(:disabled) {
+    background: #454039;
+    box-shadow: 0 2px 6px #30291d15;
+  }
+
+  .manageLink:hover,
+  .textButton:hover:not(:disabled),
+  .moveMenu summary:hover {
+    background: #eeebe4;
+    color: var(--ink);
+  }
+
+  .deleteButton:hover:not(:disabled) {
+    background: #f8eeea;
+  }
+}
+
+@media (min-width: 1024px) {
+  .workspace {
+    grid-template-columns: minmax(0, 1.7fr) minmax(300px, 1fr);
+  }
+
+  .listPanel,
+  .editorPanel {
+    padding: 24px;
+    border: 1px solid var(--line);
+    border-radius: 13px;
+    background: var(--paper);
+  }
+
+  .listPanel .panelHeading {
+    margin-bottom: 15px;
+  }
+
+  .albumList {
+    border-top: 1px solid var(--line);
+    padding-top: 6px;
+  }
+
+  .albumRow {
+    border-color: transparent;
+  }
+
+  .listItem:not(:last-child) .albumRow:not([data-selected="true"]) {
+    border-bottom-color: var(--line);
+  }
+
+  .albumSelect {
+    grid-template-columns: 49px minmax(0, 1fr) auto;
+    grid-template-rows: auto;
+    align-items: center;
+    gap: 14px;
+    min-height: 73px;
+    padding-inline: 10px 9px;
+  }
+
+  .albumStatus {
+    align-self: center;
+  }
+
+  .manageLink {
+    margin-inline: 9px 8px;
+    padding-inline: 9px;
+  }
+}
+
+@media (pointer: coarse) {
+  .manageLink,
+  .textButton,
+  .deleteButton,
+  .moveMenu summary {
+    min-height: 44px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .page *,
+  .page *::after {
+    animation: none;
+    transition: none;
+  }
+
+  .page :is(button, a, summary):active {
+    transform: none;
+  }
+}
