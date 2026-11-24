@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { FiArrowUpRight, FiImage } from 'react-icons/fi';
+import { FiImage, FiRefreshCw } from 'react-icons/fi';
 import { createClient } from '@/utils/content/client';
 import { HOME_POLAROID_KEY, homePolaroidImage } from '@/utils/content/home-polaroid';
 import { uploadPublicMedia } from '@/utils/r2/client';
@@ -93,6 +93,19 @@ function EditablePicture({ kind, src, onSave }: {
     }
   }
 
+  const PickerIcon = kind === 'polaroid' ? FiRefreshCw : FiImage;
+  const picker = (
+    <label className={styles.pictureButton} title={pickerLabel} data-busy={busy}>
+      <PickerIcon size={18} aria-hidden="true" />
+      <input type="file" className="sr-only" aria-label={pickerLabel} accept={acceptImages} disabled={busy}
+        onChange={event => {
+          const file = event.currentTarget.files?.[0];
+          event.currentTarget.value = '';
+          if (file) void replace(file);
+        }} />
+    </label>
+  );
+
   return (
     <div className={styles.picture} data-kind={kind}>
       <div className={styles.pictureCard}>
@@ -103,16 +116,12 @@ function EditablePicture({ kind, src, onSave }: {
             <img src={currentSrc} alt={name + '预览'} onError={() => setFailedSrc(currentSrc)} />
           ) : <FiImage className={styles.placeholder} aria-hidden="true" />}
         </div>
-        {kind === 'polaroid' && <div className={styles.paperCaption}>关于我 <FiArrowUpRight aria-hidden="true" /></div>}
-        <label className={styles.pictureButton} title={pickerLabel} data-busy={busy}>
-          <FiImage size={18} aria-hidden="true" />
-          <input type="file" className="sr-only" aria-label={pickerLabel} accept={acceptImages} disabled={busy}
-            onChange={event => {
-              const file = event.currentTarget.files?.[0];
-              event.currentTarget.value = '';
-              if (file) void replace(file);
-            }} />
-        </label>
+        {kind === 'polaroid' ? (
+          <div className={styles.paperCaption}>
+            <span>关于我</span>
+            {picker}
+          </div>
+        ) : picker}
       </div>
       <div className={styles.pictureNotice} data-error={!!notice?.error}>
         <span role="status">{notice?.text}</span>
@@ -225,8 +234,10 @@ export default function AdminBasicPage() {
             await saveProfile({ avatar_url: url });
             setAvatar(url);
           }} />
-          {profileInput('nickname', '昵称')}
-          {profileInput('bio', '个性签名')}
+          <div className={styles.profileText}>
+            {profileInput('nickname', '昵称')}
+            {profileInput('bio', '个性签名')}
+          </div>
         </div>
       </section>
       <section className={styles.polaroid} aria-label="首页拍立得">
