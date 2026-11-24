@@ -1,13 +1,13 @@
 .page {
-  --ink: #292722;
-  --muted: #635e56;
-  --line: #e6e2da;
-  --paper: #fffefa;
-  --blue: #54748b;
+  --ink: #181818;
+  --muted: #595959;
+  --line: #dedede;
+  --paper: #fff;
+  --focus: #303030;
   --ease: cubic-bezier(.22, .61, .36, 1);
   display: grid;
   align-items: start;
-  gap: 28px;
+  gap: 32px;
   padding-top: clamp(8px, 2vw, 22px);
   color: var(--ink);
 }
@@ -26,11 +26,6 @@
   min-width: 0;
 }
 
-.personal {
-  padding-top: 28px;
-  border-top: 1px solid var(--line);
-}
-
 .controls {
   padding: 0;
   border: 0;
@@ -41,7 +36,7 @@
   display: grid;
   place-items: center;
   overflow: hidden;
-  background: #eeebe4;
+  background: #f1f1f1;
 }
 
 .photoFrame {
@@ -50,7 +45,7 @@
   padding: clamp(5px, 1vw, 10px);
   border: 1px solid var(--line);
   background: var(--paper);
-  box-shadow: 0 4px 12px #29272210;
+  box-shadow: 0 4px 12px #00000010;
 }
 
 .avatarFrame {
@@ -75,7 +70,7 @@
   width: 100%;
   height: 100%;
   color: var(--muted);
-  background: #eeebe4;
+  background: #f1f1f1;
   font-size: .8125rem;
   text-align: center;
 }
@@ -107,7 +102,7 @@
   min-width: 0;
   min-height: 44px;
   padding: 8px 12px;
-  border: 1px solid #cfc9be;
+  border: 1px solid #c6c6c6;
   border-radius: 7px;
   background: var(--paper);
   color: var(--ink);
@@ -141,12 +136,12 @@
 }
 
 .pictureButton {
-  border-color: #9b9488;
+  border-color: #888;
   color: var(--ink);
 }
 
 .saveButton {
-  background: #2d2a25;
+  background: var(--ink);
   color: var(--paper);
 }
 
@@ -159,7 +154,7 @@
 
 .page :is(input, button):focus-visible,
 .pictureButton:has(input:focus-visible) {
-  outline: 2px solid var(--blue);
+  outline: 2px solid var(--focus);
   outline-offset: 3px;
 }
 
@@ -171,9 +166,9 @@
 }
 
 @media (hover: hover) {
-  .saveButton:hover:not(:disabled) { background: #454039; }
+  .saveButton:hover:not(:disabled) { background: #353535; }
   .controls:not(:disabled) .pictureButton:hover,
-  .cancel:hover:not(:disabled) { background: #eeebe4; }
+  .cancel:hover:not(:disabled) { background: #f1f1f1; }
 }
 
 .controls:not(:disabled) .pictureButton:active,
@@ -185,27 +180,19 @@
 .notice {
   min-height: 1.4em;
   margin-top: 6px;
-  color: var(--blue);
+  color: var(--muted);
   font-size: .8125rem;
 }
 
 .notice[data-error="true"],
 .loadError {
-  color: #8c4f45;
+  color: var(--ink);
 }
 
 @media (min-width: 1024px) {
   .page {
     grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr);
     gap: clamp(27px, 4vw, 52px);
-  }
-
-  .personal {
-    min-height: 100%;
-    padding-top: 0;
-    padding-left: clamp(23px, 3.1vw, 42px);
-    border-top: 0;
-    border-left: 1px solid var(--line);
   }
 }
 
