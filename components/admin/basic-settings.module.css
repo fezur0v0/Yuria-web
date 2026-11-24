@@ -1,0 +1,220 @@
+.page {
+  --ink: #292722;
+  --muted: #635e56;
+  --line: #e6e2da;
+  --paper: #fffefa;
+  --blue: #54748b;
+  --ease: cubic-bezier(.22, .61, .36, 1);
+  display: grid;
+  align-items: start;
+  gap: 28px;
+  padding-top: clamp(8px, 2vw, 22px);
+  color: var(--ink);
+}
+
+.page h2 {
+  margin-bottom: clamp(16px, 2vw, 25px);
+  font-family: "Noto Serif SC", "Songti SC", SimSun, serif;
+  font-size: clamp(1.3rem, 2.3vw, 1.85rem);
+  font-weight: 500;
+  line-height: 1.35;
+}
+
+.background,
+.personal,
+.controls {
+  min-width: 0;
+}
+
+.personal {
+  padding-top: 28px;
+  border-top: 1px solid var(--line);
+}
+
+.controls {
+  padding: 0;
+  border: 0;
+}
+
+.photoFrame,
+.avatarFrame {
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  background: #eeebe4;
+}
+
+.photoFrame {
+  box-sizing: content-box;
+  aspect-ratio: 16 / 9;
+  padding: clamp(5px, 1vw, 10px);
+  border: 1px solid var(--line);
+  background: var(--paper);
+  box-shadow: 0 4px 12px #29272210;
+}
+
+.avatarFrame {
+  width: clamp(78px, 10vw, 118px);
+  aspect-ratio: 1;
+  flex: none;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+}
+
+.photoFrame img,
+.avatarFrame img {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  object-fit: cover;
+}
+
+.picturePlaceholder {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  color: var(--muted);
+  background: #eeebe4;
+  font-size: .8125rem;
+  text-align: center;
+}
+
+.avatarRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.avatarActions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+.field {
+  display: grid;
+  gap: 7px;
+  margin-bottom: 16px;
+  color: var(--muted);
+  font-size: .875rem;
+}
+
+.field input {
+  min-width: 0;
+  min-height: 44px;
+  padding: 8px 12px;
+  border: 1px solid #cfc9be;
+  border-radius: 7px;
+  background: var(--paper);
+  color: var(--ink);
+  font-size: 1rem;
+  transition: border-color 160ms var(--ease);
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  margin-top: 18px;
+}
+
+.pictureButton,
+.saveButton,
+.cancel {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 7px 14px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  font-size: .875rem;
+  text-align: center;
+  cursor: pointer;
+  transition: transform 160ms var(--ease), background-color 160ms var(--ease), color 160ms var(--ease);
+}
+
+.pictureButton {
+  border-color: #9b9488;
+  color: var(--ink);
+}
+
+.saveButton {
+  background: #2d2a25;
+  color: var(--paper);
+}
+
+.cancel {
+  padding-inline: 6px;
+  color: var(--muted);
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+.page :is(input, button):focus-visible,
+.pictureButton:has(input:focus-visible) {
+  outline: 2px solid var(--blue);
+  outline-offset: 3px;
+}
+
+.saveButton:disabled,
+.controls:disabled .pictureButton,
+.controls:disabled .cancel {
+  opacity: .55;
+  cursor: not-allowed;
+}
+
+@media (hover: hover) {
+  .saveButton:hover:not(:disabled) { background: #454039; }
+  .controls:not(:disabled) .pictureButton:hover,
+  .cancel:hover:not(:disabled) { background: #eeebe4; }
+}
+
+.controls:not(:disabled) .pictureButton:active,
+.saveButton:active:not(:disabled),
+.cancel:active:not(:disabled) {
+  transform: translateY(1px) scale(.982);
+}
+
+.notice {
+  min-height: 1.4em;
+  margin-top: 6px;
+  color: var(--blue);
+  font-size: .8125rem;
+}
+
+.notice[data-error="true"],
+.loadError {
+  color: #8c4f45;
+}
+
+@media (min-width: 1024px) {
+  .page {
+    grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr);
+    gap: clamp(27px, 4vw, 52px);
+  }
+
+  .personal {
+    min-height: 100%;
+    padding-top: 0;
+    padding-left: clamp(23px, 3.1vw, 42px);
+    border-top: 0;
+    border-left: 1px solid var(--line);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .page *,
+  .controls:not(:disabled) .pictureButton:active,
+  .saveButton:active:not(:disabled),
+  .cancel:active:not(:disabled) {
+    transition: none;
+    transform: none;
+  }
+}

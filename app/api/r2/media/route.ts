@@ -6,10 +6,12 @@ import { epochMatches } from '@/utils/migration/cutover';
 import { isSameOriginRequest } from '@/utils/security/origin';
 import { createR2Client, getR2Config } from '@/utils/r2/server';
 
+import { SITE_IMAGE_TYPES, MAX_SITE_IMAGE_BYTES } from '@/utils/r2/site-images';
+
 export const runtime = 'nodejs';
 
 const MAX_UPLOAD_SIZE = 2 * 1024 * 1024 * 1024;
-const ALLOWED_FOLDER = /^(gallery\/[a-zA-Z0-9-]+|portfolio\/(covers|content))$/;
+const ALLOWED_FOLDER = /^(gallery\/[a-zA-Z0-9-]+|portfolio\/(covers|content)|site\/(background|avatar))$/;
 
 function encodeObjectKey(key: string) {
   return key.split('/').map(encodeURIComponent).join('/');
@@ -57,6 +59,10 @@ export async function POST(request: Request) {
   }
   if (!ALLOWED_FOLDER.test(body.folder)) {
     return Response.json({ error: '上传目录无效' }, { status: 400 });
+  }
+
+  if (body.folder.startsWith('site/') && (!SITE_IMAGE_TYPES.includes(body.contentType) || body.size > MAX_SITE_IMAGE_BYTES)) {
+    return Response.json({ error: '请选择不超过 20 MB 的 JPG、PNG、WebP、AVIF 或 GIF 图片。' }, { status: 400 });
   }
 
   const { bucket, publicUrl } = getR2Config();

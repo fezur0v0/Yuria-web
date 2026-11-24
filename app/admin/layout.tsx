@@ -4,7 +4,7 @@ import AdminNav from '@/components/admin/AdminNav';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const isGalleryPage = pathname === '/admin/gallery';
+  const isWideSettingsPage = pathname === '/admin' || pathname === '/admin/gallery';
   const isAuthPage = pathname === '/admin/login' || pathname === '/admin/unauthorized';
   const isEditorPage = /^\/admin\/portfolio\/(new|.+\/edit)$/.test(pathname);
 
@@ -12,7 +12,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   return <div className="min-h-screen bg-[#fafaf8]">
     <AdminNav key={pathname} />
-    <main className={`mx-auto w-full px-5 pb-12 pt-24 lg:px-10 lg:pb-10 lg:pt-[104px] ${isGalleryPage ? 'max-w-[1200px]' : 'max-w-3xl'}`}>
+    <main className={`mx-auto w-full px-5 pb-12 pt-24 lg:px-10 lg:pb-10 lg:pt-[104px] ${isWideSettingsPage ? 'max-w-[1200px]' : 'max-w-3xl'}`}>
       {children}
     </main>
   </div>;
