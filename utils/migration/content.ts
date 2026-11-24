@@ -1,3 +1,4 @@
+import { HOME_POLAROID_KEY } from '../content/home-polaroid.ts';
 import { createHash } from 'node:crypto';
 import { CONTENT_TABLES } from './backup.ts';
 
@@ -38,7 +39,7 @@ export function visibleContent(document: ContentDocument, owner: boolean): Conte
   copy.tables.theater_cards = [];
   copy.tables.theater_records = [];
   copy.tables.characters = [];
-  copy.tables.site_config = copy.tables.site_config.filter(row => ['cover_url', 'signature', 'me_page'].includes(String(row.key)));
+  copy.tables.site_config = copy.tables.site_config.filter(row => ['cover_url', HOME_POLAROID_KEY, 'signature', 'me_page'].includes(String(row.key)));
   return copy;
 }
 

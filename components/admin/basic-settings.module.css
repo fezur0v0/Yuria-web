@@ -1,206 +1,273 @@
 .page {
   --ink: #181818;
   --muted: #595959;
-  --line: #dedede;
   --paper: #fff;
-  --focus: #303030;
+  --line: #d5d5d5;
   --ease: cubic-bezier(.22, .61, .36, 1);
   display: grid;
   align-items: start;
-  gap: 32px;
+  gap: clamp(32px, 7vw, 68px);
   padding-top: clamp(8px, 2vw, 22px);
   color: var(--ink);
 }
 
-.page h2 {
-  margin-bottom: clamp(16px, 2vw, 25px);
-  font-family: "Noto Serif SC", "Songti SC", SimSun, serif;
-  font-size: clamp(1.3rem, 2.3vw, 1.85rem);
-  font-weight: 500;
-  line-height: 1.35;
-}
-
-.background,
-.personal,
-.controls {
+.identity,
+.polaroid,
+.picture,
+.field {
   min-width: 0;
 }
 
-.controls {
-  padding: 0;
-  border: 0;
+.picture {
+  position: relative;
 }
 
-.photoFrame,
-.avatarFrame {
+.pictureCard {
+  position: relative;
+  background: var(--paper);
+}
+
+.imageWindow {
   display: grid;
   place-items: center;
-  overflow: hidden;
-  background: #f1f1f1;
-}
-
-.photoFrame {
-  box-sizing: content-box;
+  grid-template: minmax(0, 1fr) / minmax(0, 1fr);
   aspect-ratio: 16 / 9;
-  padding: clamp(5px, 1vw, 10px);
-  border: 1px solid var(--line);
-  background: var(--paper);
-  box-shadow: 0 4px 12px #00000010;
+  overflow: hidden;
+  background: #ededed;
 }
 
-.avatarFrame {
-  width: clamp(78px, 10vw, 118px);
-  aspect-ratio: 1;
-  flex: none;
-  border: 1px solid var(--line);
-  border-radius: 50%;
-}
-
-.photoFrame img,
-.avatarFrame img {
+.imageWindow img {
+  display: block;
   width: 100%;
   height: 100%;
   min-height: 0;
   object-fit: cover;
 }
 
-.picturePlaceholder {
-  display: grid;
-  place-items: center;
-  width: 100%;
-  height: 100%;
-  color: var(--muted);
-  background: #f1f1f1;
-  font-size: .8125rem;
-  text-align: center;
+.placeholder {
+  width: 26px;
+  height: 26px;
+  color: #717171;
 }
 
-.avatarRow {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 16px;
-  margin-bottom: 24px;
+.picture[data-kind="background"] .pictureCard {
+  border: 1px solid var(--line);
 }
 
-.avatarActions {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 6px;
-}
-
-.field {
-  display: grid;
-  gap: 7px;
-  margin-bottom: 16px;
-  color: var(--muted);
-  font-size: .875rem;
-}
-
-.field input {
-  min-width: 0;
-  min-height: 44px;
-  padding: 8px 12px;
-  border: 1px solid #c6c6c6;
-  border-radius: 7px;
-  background: var(--paper);
-  color: var(--ink);
-  font-size: 1rem;
-  transition: border-color 160ms var(--ease);
-}
-
-.actions {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 8px 12px;
-  margin-top: 18px;
-}
-
-.pictureButton,
-.saveButton,
-.cancel {
+.profile {
+  isolation: isolate;
   position: relative;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 44px;
-  padding: 7px 14px;
-  border: 1px solid transparent;
-  border-radius: 8px;
-  font-size: .875rem;
-  text-align: center;
-  cursor: pointer;
-  transition: transform 160ms var(--ease), background-color 160ms var(--ease), color 160ms var(--ease);
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: end;
+  gap: 16px clamp(12px, 2.3vw, 22px);
+  margin-top: clamp(-44px, -4vw, -28px);
+  padding-inline: clamp(4px, 2vw, 18px);
+}
+
+.picture[data-kind="avatar"] {
+  width: clamp(86px, 10vw, 116px);
+}
+
+.picture[data-kind="avatar"] .pictureCard {
+  padding: 3px;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+}
+
+.picture[data-kind="avatar"] .imageWindow {
+  aspect-ratio: 1;
+  border-radius: 50%;
 }
 
 .pictureButton {
-  border-color: #888;
-  color: var(--ink);
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border: 1px solid #fff9;
+  border-radius: 50%;
+  background: #282828e6;
+  color: #fff;
+  cursor: pointer;
+  box-shadow: 0 2px 6px #0002;
+  transition: background-color 160ms var(--ease), transform 160ms var(--ease);
 }
 
-.saveButton {
-  background: var(--ink);
-  color: var(--paper);
+.picture[data-kind="avatar"] .pictureButton {
+  top: auto;
+  right: -2px;
+  bottom: -3px;
 }
 
-.cancel {
-  padding-inline: 6px;
-  color: var(--muted);
-  text-decoration: underline;
-  text-underline-offset: 4px;
+.pictureButton[data-busy="true"] {
+  opacity: .66;
+  cursor: progress;
 }
 
-.page :is(input, button):focus-visible,
-.pictureButton:has(input:focus-visible) {
-  outline: 2px solid var(--focus);
+.pictureButton:not([data-busy="true"]):active {
+  transform: translateY(1px) scale(.96);
+}
+
+.pictureButton:has(input:focus-visible),
+.field input:focus-visible,
+.pictureNotice button:focus-visible {
+  outline: 2px solid #303030;
   outline-offset: 3px;
 }
 
-.saveButton:disabled,
-.controls:disabled .pictureButton,
-.controls:disabled .cancel {
-  opacity: .55;
-  cursor: not-allowed;
+.field {
+  position: relative;
+  display: block;
+}
+
+.field[data-field="bio"] {
+  grid-column: 1 / -1;
+}
+
+.field input {
+  display: block;
+  width: 100%;
+  min-height: 44px;
+  padding: 8px 10px;
+  border: 1px solid transparent;
+  border-bottom-color: #bdbdbd;
+  border-radius: 0;
+  background: transparent;
+  color: var(--ink);
+  font-size: 1rem;
+  transition: border-color 160ms var(--ease), background-color 160ms var(--ease);
+}
+
+.field input::placeholder {
+  color: var(--muted);
+}
+
+.field input:focus {
+  border-color: #777;
+  border-radius: 4px;
+  background: #fff;
+}
+
+.polaroid {
+  width: min(89%, 360px);
+  margin: 6px auto 0;
+}
+
+.picture[data-kind="polaroid"] .pictureCard {
+  padding: 8px 8px 0;
+  border: 1px solid var(--line);
+  transform: rotate(3deg);
+  box-shadow: 0 12px 28px #0002, 0 2px 5px #0001;
+}
+
+.picture[data-kind="polaroid"] .imageWindow {
+  aspect-ratio: 1.25;
+}
+
+.picture[data-kind="polaroid"] .imageWindow img {
+  filter: grayscale(1) contrast(1.08);
+}
+
+.paperCaption {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 44px;
+  padding: 5px 4px;
+  font-size: .8125rem;
+  font-weight: 550;
+}
+
+.pictureNotice,
+.textNotice {
+  color: var(--muted);
+  font-size: .75rem;
+  line-height: 1.4;
+}
+
+.pictureNotice {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding-top: 5px;
+}
+
+.picture[data-kind="background"] .pictureNotice {
+  position: absolute;
+  z-index: 2;
+  inset-inline-end: 0;
+  top: 100%;
+  max-width: calc(100% - 110px);
+  text-align: end;
+  justify-content: flex-end;
+}
+
+.picture[data-kind="avatar"] .pictureNotice {
+  position: absolute;
+  top: calc(100% + 2px);
+  z-index: 2;
+  width: min(180px, 65vw);
+}
+
+.picture[data-kind="avatar"] .pictureNotice:has(span:not(:empty)) {
+  padding: 3px 5px;
+  background: #fffffff5;
+}
+
+.textNotice {
+  display: block;
+}
+
+.field[data-field="nickname"] .textNotice {
+  position: absolute;
+  inset-inline-start: 10px;
+  top: 100%;
+}
+
+.textNotice:not(:empty) {
+  margin-top: 3px;
+}
+
+.pictureNotice[data-error="true"],
+.textNotice[data-error="true"] {
+  color: var(--ink);
+}
+
+.pictureNotice button {
+  min-height: 24px;
+  color: var(--ink);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  white-space: nowrap;
 }
 
 @media (hover: hover) {
-  .saveButton:hover:not(:disabled) { background: #353535; }
-  .controls:not(:disabled) .pictureButton:hover,
-  .cancel:hover:not(:disabled) { background: #f1f1f1; }
-}
+  .pictureButton:not([data-busy="true"]):hover {
+    background: #121212;
+  }
 
-.controls:not(:disabled) .pictureButton:active,
-.saveButton:active:not(:disabled),
-.cancel:active:not(:disabled) {
-  transform: translateY(1px) scale(.982);
-}
-
-.notice {
-  min-height: 1.4em;
-  margin-top: 6px;
-  color: var(--muted);
-  font-size: .8125rem;
-}
-
-.notice[data-error="true"],
-.loadError {
-  color: var(--ink);
+  .field input:hover {
+    border-bottom-color: #585858;
+  }
 }
 
 @media (min-width: 1024px) {
   .page {
-    grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr);
-    gap: clamp(27px, 4vw, 52px);
+    grid-template-columns: minmax(0, 1.65fr) minmax(0, 1fr);
+  }
+
+  .polaroid {
+    margin-top: clamp(10px, 3vw, 36px);
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .page *,
-  .controls:not(:disabled) .pictureButton:active,
-  .saveButton:active:not(:disabled),
-  .cancel:active:not(:disabled) {
+  .pictureButton:not([data-busy="true"]):active {
     transition: none;
     transform: none;
   }

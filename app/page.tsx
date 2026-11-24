@@ -5,6 +5,8 @@ import Link from 'next/link'
 import { FiArrowUpRight, FiLock } from 'react-icons/fi'
 import { createClient } from '@/utils/content/client'
 import PortfolioNav from '@/components/PortfolioNav'
+import HomeAboutPrint from '@/components/HomeAboutPrint'
+import { HOME_POLAROID_KEY, homePolaroidImage } from '@/utils/content/home-polaroid'
 import './home.css'
 
 type PortfolioItem = {
@@ -29,6 +31,7 @@ function excerpt(html: string | null) {
 
 export default function Home() {
   const [coverUrl, setCoverUrl] = useState('')
+  const [polaroidUrl, setPolaroidUrl] = useState('')
   const [works, setWorks] = useState<PortfolioItem[]>([])
   const [albums, setAlbums] = useState<GalleryAlbum[]>([])
 
@@ -39,6 +42,7 @@ export default function Home() {
       if (!active || !data) return
       const entries = Object.fromEntries(data.map(row => [row.key, row.value]))
       setCoverUrl(entries.cover_url ?? '')
+      setPolaroidUrl(entries[HOME_POLAROID_KEY] ?? '')
     })
     void supabase.from('portfolio_items')
       .select('id, title, category, date, content, cover_url')
@@ -46,13 +50,13 @@ export default function Home() {
       .then(({ data }) => { if (active) setWorks(data ?? []) })
     void supabase.from('gallery_albums')
       .select('id, title, cover_image_url')
-      .eq('is_featured_home', true).eq('is_visible', true).order('sort_order').limit(3)
+      .eq('is_featured_home', true).eq('is_visible', true).or('is_locked.is.null,is_locked.eq.false')
+      .order('sort_order').limit(3)
       .then(({ data }) => { if (active) setAlbums(data ?? []) })
     return () => { active = false }
   }, [])
 
-  const featured = works[0]
-  const heroArt = featured?.cover_url || albums[0]?.cover_image_url || coverUrl
+  const heroArt = homePolaroidImage(polaroidUrl, works[0]?.cover_url, albums[0]?.cover_image_url, coverUrl)
 
   return <div className="home-editorial">
     <PortfolioNav showSections />
@@ -70,10 +74,7 @@ export default function Home() {
           <span>於你而言我是一顆星嗎</span>
         </div>
 
-        {heroArt && <Link href={featured ? `/portfolio/${featured.id}` : albums[0] ? `/gallery/${albums[0].id}` : '/gallery'} className="home-hero__print" aria-label={featured ? `查看作品：${featured.title}` : '查看图集'}>
-          <div className="home-hero__print-image"><img src={heroArt} alt={featured?.title ?? albums[0]?.title ?? 'Yuria 封面'} /></div>
-          <div className="home-hero__print-caption"><span>FEATURED</span><strong>{featured?.title ?? albums[0]?.title ?? 'Yuria'}</strong><FiArrowUpRight size={18} aria-hidden="true" /></div>
-        </Link>}
+        <HomeAboutPrint src={heroArt} />
 
         <div className="home-hero__edge" aria-hidden="true"><span>IMAGES / WORDS / MUSIC</span><span>YURIA.XIN</span></div>
       </section>

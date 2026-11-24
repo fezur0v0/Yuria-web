@@ -1,3 +1,4 @@
+import { HOME_POLAROID_KEY } from '../content/home-polaroid.ts';
 import { createHash } from 'node:crypto';
 import { visibleContent, type ContentDocument } from './content.ts';
 import { legacyMedia } from './legacyMedia.ts';
@@ -23,7 +24,7 @@ export function imageReferences(document: ContentDocument) {
       for (const match of value.matchAll(regex)) image(match[1]);
     }
   }
-  for (const row of document.tables.site_config) if (row.key === 'cover_url') image(row.value);
+  for (const row of document.tables.site_config) if (row.key === 'cover_url' || row.key === HOME_POLAROID_KEY) image(row.value);
   for (const row of document.tables.site_settings) { image(row.avatar_url); image(row.hero_image_url); }
   for (const row of document.tables.music_tracks) image(row.cover_url);
   for (const row of document.tables.portfolio_items) { image(row.cover_url); image(row.images); content(row.content); }

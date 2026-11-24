@@ -11,7 +11,7 @@ import { SITE_IMAGE_TYPES, MAX_SITE_IMAGE_BYTES } from '@/utils/r2/site-images';
 export const runtime = 'nodejs';
 
 const MAX_UPLOAD_SIZE = 2 * 1024 * 1024 * 1024;
-const ALLOWED_FOLDER = /^(gallery\/[a-zA-Z0-9-]+|portfolio\/(covers|content)|site\/(background|avatar))$/;
+const ALLOWED_FOLDER = /^(gallery\/[a-zA-Z0-9-]+|portfolio\/(covers|content)|site\/(background|avatar|polaroid))$/;
 
 function encodeObjectKey(key: string) {
   return key.split('/').map(encodeURIComponent).join('/');

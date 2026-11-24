@@ -1,7 +1,9 @@
 'use client';
 
-import { useEffect, useRef, useState, type FormEvent } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { FiArrowUpRight, FiImage } from 'react-icons/fi';
 import { createClient } from '@/utils/content/client';
+import { HOME_POLAROID_KEY, homePolaroidImage } from '@/utils/content/home-polaroid';
 import { uploadPublicMedia } from '@/utils/r2/client';
 import { SITE_IMAGE_TYPES, MAX_SITE_IMAGE_BYTES } from '@/utils/r2/site-images';
 import AdminLoading from './AdminLoading';
@@ -9,110 +11,153 @@ import styles from './basic-settings.module.css';
 
 const content = createClient();
 const acceptImages = SITE_IMAGE_TYPES.join(',');
-const initialProfile = { nickname: '', bio: '', avatar_url: '' };
+const emptyProfile = { nickname: '', bio: '' };
 
-type Profile = typeof initialProfile;
-type PictureKind = 'background' | 'avatar';
+type TextField = keyof typeof emptyProfile;
+type PictureKind = 'background' | 'avatar' | 'polaroid';
 type Notice = { text: string; error?: boolean };
-type ImageChoice = { file: File; preview: string };
+const pictureNames: Record<PictureKind, string> = {
+  background: '背景',
+  avatar: '头像',
+  polaroid: '拍立得照片',
+};
 
-function useImageChoice(kind: PictureKind) {
-  const [choice, setChoice] = useState<ImageChoice>();
-  const uploaded = useRef<{ file: File; url: string }>(null);
+function message(error: unknown, fallback: string) {
+  return error instanceof Error ? error.message : fallback;
+}
+
+async function saveSiteImage(key: string, url: string) {
+  const { error } = await content.from('site_config').upsert({ key, value: url }, { onConflict: 'key' });
+  if (error) throw error;
+}
+
+async function saveProfile(patch: Partial<typeof emptyProfile & { avatar_url: string }>) {
+  const { error } = await content.from('site_settings').upsert({ id: true, ...patch }, { onConflict: 'id' });
+  if (error) throw error;
+}
+
+function EditablePicture({ kind, src, onSave }: {
+  kind: PictureKind;
+  src: string;
+  onSave: (url: string) => Promise<void>;
+}) {
+  const [draft, setDraft] = useState('');
+  const [failedSrc, setFailedSrc] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [notice, setNotice] = useState<Notice>();
+  const [retry, setRetry] = useState<{ file: File; url?: string }>();
+  const locked = useRef(false);
+  const name = pictureNames[kind];
+  const currentSrc = draft || src;
+  const pickerLabel = (src ? '更换' : '选择') + name;
 
   useEffect(() => {
-    if (!choice) return;
-    return () => URL.revokeObjectURL(choice.preview);
-  }, [choice]);
+    if (draft) return () => URL.revokeObjectURL(draft);
+  }, [draft]);
 
-  function choose(file: File) {
-    if (!SITE_IMAGE_TYPES.includes(file.type)) throw new Error('请选择 JPG、PNG、WebP、AVIF 或 GIF 图片。');
-    if (file.size === 0 || file.size > MAX_SITE_IMAGE_BYTES) throw new Error('请选择不超过 20 MB 的有效图片。');
-    uploaded.current = null;
-    setChoice({ file, preview: URL.createObjectURL(file) });
+  useEffect(() => {
+    if (!notice || notice.error) return;
+    const timeout = window.setTimeout(() => setNotice(undefined), 2400);
+    return () => window.clearTimeout(timeout);
+  }, [notice]);
+
+  async function replace(file: File, uploadedUrl?: string) {
+    if (locked.current) return;
+    setRetry(undefined);
+    if (!SITE_IMAGE_TYPES.includes(file.type) || file.size <= 0 || file.size > MAX_SITE_IMAGE_BYTES) {
+      setNotice({ text: '请选择 20 MB 以内的 JPG、PNG、WebP、AVIF 或 GIF 图片。', error: true });
+      return;
+    }
+
+    locked.current = true;
+    setBusy(true);
+    const preview = URL.createObjectURL(file);
+    setDraft(preview);
+    setNotice({ text: '正在保存' + name + '…' });
+    let url = uploadedUrl;
+    try {
+      // Reject corrupt images before making them public.
+      const image = new window.Image();
+      image.src = preview;
+      try { await image.decode(); } catch { throw new Error('无法读取这张图片，请重新选择。'); }
+      url ??= await uploadPublicMedia(file, 'site/' + kind);
+      await onSave(url);
+      setNotice({ text: name + '已保存' });
+    } catch (error) {
+      setNotice({ text: message(error, name + '保存失败。'), error: true });
+      if (url) setRetry({ file, url });
+    } finally {
+      setDraft('');
+      setBusy(false);
+      locked.current = false;
+    }
   }
 
-  async function upload() {
-    if (!choice) return undefined;
-    if (uploaded.current?.file === choice.file) return uploaded.current.url;
-    const url = await uploadPublicMedia(choice.file, 'site/' + kind);
-    // Reuse the completed upload if saving the setting needs to be retried.
-    uploaded.current = { file: choice.file, url };
-    return url;
-  }
-
-  function clear() {
-    setChoice(undefined);
-    uploaded.current = null;
-  }
-
-  return { preview: choice?.preview, choose, upload, clear };
-}
-
-function PicturePreview({ src, kind, alt }: { src: string; kind: PictureKind; alt: string }) {
-  const [failedSrc, setFailedSrc] = useState('');
   return (
-    <div className={kind === 'background' ? styles.photoFrame : styles.avatarFrame}>
-      {src && src !== failedSrc ? (
-        // Settings can still reference images from before the storage migration.
-        // eslint-disable-next-line @next/next/no-img-element
-        <img src={src} alt={alt} onError={() => setFailedSrc(src)} />
-      ) : <span className={styles.picturePlaceholder}>{src ? '预览不可用' : kind === 'background' ? '尚未设置背景' : '暂无头像'}</span>}
+    <div className={styles.picture} data-kind={kind}>
+      <div className={styles.pictureCard}>
+        <div className={styles.imageWindow}>
+          {currentSrc && failedSrc !== currentSrc ? (
+            // Public images may come from existing external or R2 URLs.
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={currentSrc} alt={name + '预览'} onError={() => setFailedSrc(currentSrc)} />
+          ) : <FiImage className={styles.placeholder} aria-hidden="true" />}
+        </div>
+        {kind === 'polaroid' && <div className={styles.paperCaption}>关于我 <FiArrowUpRight aria-hidden="true" /></div>}
+        <label className={styles.pictureButton} title={pickerLabel} data-busy={busy}>
+          <FiImage size={18} aria-hidden="true" />
+          <input type="file" className="sr-only" aria-label={pickerLabel} accept={acceptImages} disabled={busy}
+            onChange={event => {
+              const file = event.currentTarget.files?.[0];
+              event.currentTarget.value = '';
+              if (file) void replace(file);
+            }} />
+        </label>
+      </div>
+      <div className={styles.pictureNotice} data-error={!!notice?.error}>
+        <span role="status">{notice?.text}</span>
+        {retry && <button type="button" onClick={() => void replace(retry.file, retry.url)}>重试</button>}
+      </div>
     </div>
   );
-}
-
-function PickImage({ label, onPick }: { label: string; onPick: (file: File) => void }) {
-  return (
-    <label className={styles.pictureButton}>
-      <span>{label}</span>
-      <input className="sr-only" type="file" accept={acceptImages} aria-label={label}
-        onChange={event => {
-          const file = event.currentTarget.files?.[0];
-          if (file) onPick(file);
-          event.currentTarget.value = '';
-        }} />
-    </label>
-  );
-}
-
-function message(error: unknown, fallback: string): Notice {
-  return { text: error instanceof Error ? error.message : fallback, error: true };
 }
 
 export default function AdminBasicPage() {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
-  const [cover, setCover] = useState('');
-  const [profile, setProfile] = useState<Profile>(initialProfile);
-  const [savedProfile, setSavedProfile] = useState<Profile>(initialProfile);
-  const [savingCover, setSavingCover] = useState(false);
-  const [savingProfile, setSavingProfile] = useState(false);
-  const [coverNotice, setCoverNotice] = useState<Notice>();
-  const [profileNotice, setProfileNotice] = useState<Notice>();
-  const background = useImageChoice('background');
-  const avatar = useImageChoice('avatar');
-  const profileChanged = profile.nickname !== savedProfile.nickname || profile.bio !== savedProfile.bio || !!avatar.preview;
+  const [background, setBackground] = useState('');
+  const [avatar, setAvatar] = useState('');
+  const [polaroid, setPolaroid] = useState('');
+  const [featured, setFeatured] = useState<{ work?: string; album?: string }>({});
+  const [profile, setProfile] = useState(emptyProfile);
+  const saved = useRef(emptyProfile);
+  const pending = useRef<Partial<Record<TextField, { value: string }>>>({});
+  const [textNotices, setTextNotices] = useState<Partial<Record<TextField, Notice>>>({});
 
   useEffect(() => {
     let cancelled = false;
     async function load() {
       try {
-        const [backgroundResult, profileResult] = await Promise.all([
-          content.from('site_config').select('value').eq('key', 'cover_url').limit(1),
+        const [configResult, profileResult, works, albums] = await Promise.all([
+          content.from('site_config').select('key,value').in('key', ['cover_url', HOME_POLAROID_KEY]),
           content.from('site_settings').select('nickname,bio,avatar_url').eq('id', true).limit(1),
+          content.from('portfolio_items').select('cover_url').eq('is_visible', true)
+            .order('sort_order', { ascending: true, nullsFirst: false }).limit(1),
+          content.from('gallery_albums').select('cover_image_url').eq('is_featured_home', true)
+            .eq('is_visible', true).or('is_locked.is.null,is_locked.eq.false')
+            .order('sort_order').limit(1),
         ]);
-        if (backgroundResult.error || profileResult.error) throw new Error('Settings could not be loaded');
+        if (configResult.error || profileResult.error) throw new Error('Settings could not be loaded');
         if (cancelled) return;
+        const config = Object.fromEntries((configResult.data ?? []).map(row => [row.key, row.value]));
         const row = profileResult.data?.[0];
-        const currentProfile = {
-          nickname: row?.nickname ?? '',
-          bio: row?.bio ?? '',
-          avatar_url: row?.avatar_url ?? '',
-        };
-        setCover(backgroundResult.data?.[0]?.value ?? '');
-        setProfile(currentProfile);
-        setSavedProfile(currentProfile);
+        const current = { nickname: row?.nickname ?? '', bio: row?.bio ?? '' };
+        saved.current = current;
+        setProfile(current);
+        setAvatar(row?.avatar_url ?? '');
+        setBackground(config.cover_url ?? '');
+        setPolaroid(config[HOME_POLAROID_KEY] ?? '');
+        setFeatured({ work: works.data?.[0]?.cover_url ?? undefined, album: albums.data?.[0]?.cover_image_url ?? undefined });
       } catch {
         if (!cancelled) setLoadError(true);
       } finally {
@@ -123,124 +168,74 @@ export default function AdminBasicPage() {
     return () => { cancelled = true; };
   }, []);
 
-  function chooseImage(file: File, field: 'background' | 'avatar') {
-    const selection = field === 'background' ? background : avatar;
-    const setNotice = field === 'background' ? setCoverNotice : setProfileNotice;
+  function setTextNotice(field: TextField, notice?: Notice) {
+    setTextNotices(current => ({ ...current, [field]: notice }));
+  }
+
+  async function saveText(field: TextField, value: string) {
+    if (value === (pending.current[field]?.value ?? saved.current[field])) return;
+    const revision = { value };
+    pending.current[field] = revision;
+    setTextNotice(field, { text: '正在保存…' });
     try {
-      selection.choose(file);
-      setNotice(undefined);
+      await saveProfile({ [field]: value });
+      saved.current = { ...saved.current, [field]: value };
+      if (pending.current[field] === revision) setTextNotice(field, { text: '已保存' });
     } catch (error) {
-      setNotice(message(error, '无法选择这张图片。'));
+      if (pending.current[field] === revision) setTextNotice(field, { text: message(error, '保存失败，重新聚焦后可再试。'), error: true });
+    } finally {
+      if (pending.current[field] === revision) delete pending.current[field];
     }
   }
 
-  async function saveBackground(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    if (!background.preview || savingCover) return;
-    setSavingCover(true);
-    setCoverNotice(undefined);
-    try {
-      const url = await background.upload();
-      if (!url) throw new Error('未选择背景图片。');
-      const { error } = await content.from('site_config').upsert({ key: 'cover_url', value: url }, { onConflict: 'key' });
-      if (error) throw error;
-      setCover(url);
-      background.clear();
-      setCoverNotice({ text: '背景已保存' });
-    } catch (error) {
-      setCoverNotice(message(error, '背景保存失败，请重试。'));
-    } finally {
-      setSavingCover(false);
-    }
-  }
-
-  async function savePersonalDetails(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    if (!profileChanged || savingProfile) return;
-    setSavingProfile(true);
-    setProfileNotice(undefined);
-    try {
-      const avatarUrl = await avatar.upload();
-      const patch: Partial<Profile> = {};
-      if (profile.nickname !== savedProfile.nickname) patch.nickname = profile.nickname;
-      if (profile.bio !== savedProfile.bio) patch.bio = profile.bio;
-      if (avatarUrl) patch.avatar_url = avatarUrl;
-      const { error } = await content.from('site_settings').upsert({ id: true, ...patch }, { onConflict: 'id' });
-      if (error) throw error;
-      const current = { ...profile, ...patch };
-      setProfile(current);
-      setSavedProfile(current);
-      avatar.clear();
-      setProfileNotice({ text: '资料已保存' });
-    } catch (error) {
-      setProfileNotice(message(error, '资料保存失败，请重试。'));
-    } finally {
-      setSavingProfile(false);
-    }
+  function profileInput(field: TextField, label: string) {
+    return (
+      <label className={styles.field} data-field={field}>
+        <span className="sr-only">{label}</span>
+        <input value={profile[field]} aria-label={label} placeholder={label}
+          onChange={event => {
+            const value = event.currentTarget.value;
+            setProfile(current => ({ ...current, [field]: value }));
+            setTextNotice(field);
+          }}
+          onBlur={event => void saveText(field, event.currentTarget.value)}
+          onKeyDown={event => {
+            if (event.key === 'Enter' && !event.nativeEvent.isComposing) event.currentTarget.blur();
+          }} />
+        <span className={styles.textNotice} role="status" data-error={!!textNotices[field]?.error}>
+          {textNotices[field]?.text}
+        </span>
+      </label>
+    );
   }
 
   if (loading) return <AdminLoading />;
-  if (loadError) return <p role="alert" className={styles.loadError}>设置加载失败，请刷新后重试。</p>;
+  if (loadError) return <p role="alert">设置加载失败，请刷新后重试。</p>;
 
   return (
     <div className={styles.page}>
       <h1 className="sr-only">基本设置</h1>
-      <form className={styles.background} aria-labelledby="basic-background-title" onSubmit={saveBackground}>
-        <h2 id="basic-background-title">首页背景</h2>
-        <fieldset disabled={savingCover} className={styles.controls}>
-          <PicturePreview kind="background" src={background.preview ?? cover} alt="首页背景预览" />
-          <div className={styles.actions}>
-            <PickImage label={cover || background.preview ? '更换背景' : '选择背景'} onPick={file => chooseImage(file, 'background')} />
-            <button className={styles.saveButton} type="submit" disabled={!background.preview}>
-              {savingCover ? '正在保存…' : '保存背景'}
-            </button>
-            {background.preview && <button className={styles.cancel} type="button" onClick={() => {
-              background.clear();
-              setCoverNotice(undefined);
-            }}>取消更换</button>}
-          </div>
-        </fieldset>
-        <p className={styles.notice} role="status" data-error={!!coverNotice?.error}>{coverNotice?.text}</p>
-      </form>
-
-      <form className={styles.personal} aria-labelledby="basic-profile-title" onSubmit={savePersonalDetails}>
-        <h2 id="basic-profile-title">个人资料</h2>
-        <fieldset disabled={savingProfile} className={styles.controls}>
-          <div className={styles.avatarRow}>
-            <PicturePreview kind="avatar" src={avatar.preview ?? profile.avatar_url} alt="个人头像预览" />
-            <div className={styles.avatarActions}>
-              <PickImage label={profile.avatar_url || avatar.preview ? '更换头像' : '选择头像'} onPick={file => chooseImage(file, 'avatar')} />
-              {avatar.preview && <button className={styles.cancel} type="button" onClick={() => {
-                avatar.clear();
-                setProfileNotice(undefined);
-              }}>取消更换</button>}
-            </div>
-          </div>
-
-          <label className={styles.field}>
-            昵称
-            <input value={profile.nickname} onChange={event => {
-              const nickname = event.currentTarget.value;
-              setProfile(previous => ({ ...previous, nickname }));
-              setProfileNotice(undefined);
-            }} />
-          </label>
-          <label className={styles.field}>
-            个性签名
-            <input value={profile.bio} onChange={event => {
-              const bio = event.currentTarget.value;
-              setProfile(previous => ({ ...previous, bio }));
-              setProfileNotice(undefined);
-            }} />
-          </label>
-          <div className={styles.actions}>
-            <button className={styles.saveButton} type="submit" disabled={!profileChanged}>
-              {savingProfile ? '正在保存…' : '保存资料'}
-            </button>
-          </div>
-        </fieldset>
-        <p className={styles.notice} role="status" data-error={!!profileNotice?.error}>{profileNotice?.text}</p>
-      </form>
+      <section className={styles.identity} aria-label="背景和个人资料">
+        <EditablePicture kind="background" src={background} onSave={async url => {
+          await saveSiteImage('cover_url', url);
+          setBackground(url);
+        }} />
+        <div className={styles.profile}>
+          <EditablePicture kind="avatar" src={avatar} onSave={async url => {
+            await saveProfile({ avatar_url: url });
+            setAvatar(url);
+          }} />
+          {profileInput('nickname', '昵称')}
+          {profileInput('bio', '个性签名')}
+        </div>
+      </section>
+      <section className={styles.polaroid} aria-label="首页拍立得">
+        <EditablePicture kind="polaroid"
+          src={homePolaroidImage(polaroid, featured.work, featured.album, background)} onSave={async url => {
+            await saveSiteImage(HOME_POLAROID_KEY, url);
+            setPolaroid(url);
+          }} />
+      </section>
     </div>
   );
 }
